@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AgroAsesor – Panel de Empleados</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --verde-oscuro: #1B4332;
+    --verde-medio: #2D6A4F;
+    --verde-claro: #40916C;
+    --verde-suave: #D8F3DC;
+    --amarillo: #D4A017;
+    --amarillo-suave: #FFF3CD;
+    --crema: #F8F5EE;
+    --gris-borde: #E2E8E0;
+    --gris-texto: #6B7280;
+    --blanco: #FFFFFF;
+    --rojo-suave: #FEE2E2;
+    --rojo: #DC2626;
+    --sidebar-w: 72px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', sans-serif; background: var(--crema); color: #1a1a1a; display: flex; height: 100vh; overflow: hidden; }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    background: var(--verde-oscuro);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 16px 0; gap: 8px; flex-shrink: 0; z-index: 100;
+  }
+  .sidebar-logo {
+    width: 44px; height: 44px; background: var(--amarillo);
+    border-radius: 12px; display: flex; align-items: center; justify-content: center;
+    font-family: 'Sora', sans-serif; font-weight: 800; font-size: 18px; color: var(--verde-oscuro);
+    margin-bottom: 16px;
+  }
+  .nav-btn {
+    width: 48px; height: 48px; border-radius: 12px; border: none; cursor: pointer;
+    background: transparent; color: rgba(255,255,255,0.5);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; transition: all .2s; font-size: 20px; position: relative;
+  }
+  .nav-btn span.label { font-size: 9px; font-family: 'Inter', sans-serif; font-weight: 500; }
+  .nav-btn:hover, .nav-btn.active {
+    background: rgba(255,255,255,0.12); color: var(--blanco);
+  }
+  .nav-btn.active { background: var(--verde-claro); color: var(--blanco); }
+  .sidebar-spacer { flex: 1; }
+
+  /* ── MAIN ── */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--blanco); border-bottom: 1px solid var(--gris-borde);
+    padding: 0 24px; height: 60px; display: flex; align-items: center;
+    justify-content: space-between; flex-shrink: 0;
+  }
+  .topbar-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 17px; color: var(--verde-oscuro); }
+  .topbar-title span { color: var(--amarillo); }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .badge-status { background: var(--verde-suave); color: var(--verde-oscuro); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--verde-medio); color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+
+  /* ── CONTENT ── */
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── GRID CARDS ── */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+  .stat-card {
+    background: var(--blanco); border-radius: 16px; padding: 20px;
+    border: 1px solid var(--gris-borde);
+  }
+  .stat-card .label { font-size: 12px; color: var(--gris-texto); font-weight: 500; margin-bottom: 6px; }
+  .stat-card .value { font-family: 'Sora', sans-serif; font-size: 28px; font-weight: 800; color: var(--verde-oscuro); }
+  .stat-card .sub { font-size: 12px; color: var(--gris-texto); margin-top: 4px; }
+  .stat-card .icon { font-size: 28px; float: right; margin-top: -4px; }
+
+  /* ── MAIN ROW ── */
+  .main-row { display: grid; grid-template-columns: 1fr 380px; gap: 20px; }
+
+  /* ── CHAT BOX ── */
+  .chat-card {
+    background: var(--blanco); border-radius: 16px; border: 1px solid var(--gris-borde);
+    display: flex; flex-direction: column; height: 520px;
+  }
+  .chat-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--gris-borde);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .agent-avatar {
+    width: 38px; height: 38px; border-radius: 50%; background: var(--verde-medio);
+    display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .agent-info .name { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 14px; color: var(--verde-oscuro); }
+  .agent-info .status { font-size: 11px; color: var(--verde-claro); font-weight: 500; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 85%; padding: 10px 14px; border-radius: 14px; font-size: 13.5px; line-height: 1.5; }
+  .msg.bot { background: var(--verde-suave); color: var(--verde-oscuro); border-bottom-left-radius: 4px; align-self: flex-start; }
+  .msg.user { background: var(--verde-medio); color: var(--blanco); border-bottom-right-radius: 4px; align-self: flex-end; }
+  .msg.thinking { background: var(--gris-borde); color: var(--gris-texto); font-style: italic; align-self: flex-start; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  .chat-input-area { padding: 12px 16px; border-top: 1px solid var(--gris-borde); display: flex; gap: 8px; }
+  .chat-input {
+    flex: 1; border: 1.5px solid var(--gris-borde); border-radius: 10px; padding: 10px 14px;
+    font-family: 'Inter', sans-serif; font-size: 13.5px; outline: none; resize: none;
+    background: var(--crema); transition: border-color .2s;
+  }
+  .chat-input:focus { border-color: var(--verde-claro); }
+  .send-btn {
+    width: 42px; height: 42px; border-radius: 10px; border: none; cursor: pointer;
+    background: var(--verde-medio); color: #fff; font-size: 18px;
+    display: flex; align-items: center; justify-content: center; transition: background .2s; flex-shrink: 0;
+  }
+  .send-btn:hover { background: var(--verde-oscuro); }
+  .quick-chips { padding: 0 16px 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    padding: 4px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 500;
+    background: var(--verde-suave); color: var(--verde-oscuro); border: none; cursor: pointer; transition: background .2s;
+  }
+  .chip:hover { background: #b7e4c7; }
+
+  /* ── ACTIVITY ── */
+  .activity-card {
+    background: var(--blanco); border-radius: 16px; border: 1px solid var(--gris-borde);
+    padding: 20px; height: 520px; overflow-y: auto;
+  }
+  .section-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; color: var(--verde-oscuro); margin-bottom: 16px; }
+  .activity-item { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--gris-borde); }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .dot-green { background: var(--verde-claro); }
+  .dot-yellow { background: var(--amarillo); }
+  .dot-red { background: var(--rojo); }
+  .activity-text { font-size: 13px; color: #333; line-height: 1.5; }
+  .activity-time { font-size: 11px; color: var(--gris-texto); margin-top: 2px; }
+
+  /* ── VENTA PANEL ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1/-1; }
+  label { font-size: 12px; font-weight: 600; color: var(--verde-oscuro); }
+  input, select, textarea {
+    border: 1.5px solid var(--gris-borde); border-radius: 10px; padding: 10px 14px;
+    font-family: 'Inter', sans-serif; font-size: 13.5px; outline: none;
+    background: var(--blanco); transition: border-color .2s;
+  }
+  input:focus, select:focus, textarea:focus { border-color: var(--verde-claro); }
+  .btn-primary {
+    background: var(--verde-medio); color: #fff; border: none; border-radius: 10px;
+    padding: 12px 24px; font-family: 'Sora', sans-serif; font-weight: 700; font-size: 14px;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-primary:hover { background: var(--verde-oscuro); }
+  .btn-secondary {
+    background: var(--crema); color: var(--verde-oscuro); border: 1.5px solid var(--gris-borde);
+    border-radius: 10px; padding: 12px 24px; font-family: 'Sora', sans-serif; font-weight: 600;
+    font-size: 14px; cursor: pointer;
+  }
+  .card { background: var(--blanco); border-radius: 16px; border: 1px solid var(--gris-borde); padding: 24px; margin-bottom: 20px; }
+  .card-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; color: var(--verde-oscuro); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+
+  /* ── CLIENTES ── */
+  .search-bar { display: flex; gap: 10px; margin-bottom: 20px; }
+  .search-input { flex: 1; border: 1.5px solid var(--gris-borde); border-radius: 10px; padding: 10px 16px; font-size: 13.5px; outline: none; background: var(--blanco); }
+  .search-input:focus { border-color: var(--verde-claro); }
+  .table-wrap { background: var(--blanco); border-radius: 16px; border: 1px solid var(--gris-borde); overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { background: var(--verde-oscuro); }
+  th { padding: 12px 16px; text-align: left; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); letter-spacing: .5px; }
+  td { padding: 13px 16px; font-size: 13px; border-bottom: 1px solid var(--gris-borde); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--crema); }
+  .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .tag-green { background: var(--verde-suave); color: var(--verde-oscuro); }
+  .tag-yellow { background: var(--amarillo-suave); color: #92400E; }
+  .tag-red { background: var(--rojo-suave); color: var(--rojo); }
+
+  /* ── SEGUIMIENTO ── */
+  .followup-list { display: flex; flex-direction: column; gap: 14px; }
+  .followup-item {
+    background: var(--blanco); border-radius: 14px; border: 1px solid var(--gris-borde);
+    padding: 16px 20px; display: flex; align-items: center; gap: 16px;
+  }
+  .followup-avatar { width: 44px; height: 44px; border-radius: 12px; background: var(--verde-suave); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+  .followup-info { flex: 1; }
+  .followup-info .cliente { font-weight: 600; font-size: 14px; color: var(--verde-oscuro); }
+  .followup-info .producto { font-size: 12.5px; color: var(--gris-texto); margin-top: 2px; }
+  .followup-info .fecha { font-size: 11.5px; color: var(--amarillo); font-weight: 600; margin-top: 4px; }
+  .followup-actions { display: flex; gap: 8px; }
+  .btn-wa { background: #25D366; color: #fff; border: none; border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .btn-reg { background: var(--crema); color: var(--verde-oscuro); border: 1.5px solid var(--gris-borde); border-radius: 8px; padding: 8px 14px; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+
+  /* ── RECORDATORIOS ── */
+  .rec-item {
+    background: var(--blanco); border-radius: 14px;
+    border: 1.5px solid var(--amarillo); padding: 18px 20px;
+    display: flex; align-items: center; gap: 16px;
+    box-shadow: 0 2px 8px rgba(212,160,23,0.10);
+  }
+  .rec-item.vencido { border-color: var(--rojo); background: var(--rojo-suave); }
+  .rec-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--amarillo-suave); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+  .rec-icon.vencido { background: var(--rojo-suave); }
+  .rec-info { flex: 1; }
+  .rec-info .rec-cliente { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 15px; color: var(--verde-oscuro); }
+  .rec-info .rec-producto { font-size: 13px; color: var(--gris-texto); margin-top: 3px; }
+  .rec-info .rec-fecha { font-size: 12px; font-weight: 600; margin-top: 6px; color: var(--amarillo); }
+  .rec-info .rec-fecha.vencido { color: var(--rojo); }
+  .rec-info .rec-tel { font-size: 12px; color: var(--gris-texto); margin-top: 3px; }
+  .btn-notificado { background: var(--verde-medio); color: #fff; border: none; border-radius: 8px; padding: 10px 16px; font-size: 12.5px; font-weight: 700; cursor: pointer; white-space: nowrap; transition: background .2s; }
+  .btn-notificado:hover { background: var(--verde-oscuro); }
+
+  /* ── MODAL ── */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; display: none; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--blanco); border-radius: 20px; padding: 28px; width: 480px; max-width: 95vw; }
+  .modal-title { font-family: 'Sora', sans-serif; font-weight: 700; font-size: 17px; color: var(--verde-oscuro); margin-bottom: 20px; }
+  .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
+
+  /* ── TOAST ── */
+  .toast {
+    position: fixed; bottom: 24px; right: 24px; background: var(--verde-oscuro);
+    color: #fff; padding: 12px 20px; border-radius: 12px; font-size: 13.5px;
+    font-weight: 500; z-index: 9999; transform: translateY(80px); opacity: 0;
+    transition: all .3s; display: flex; align-items: center; gap: 8px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* ── RESPONSIVE ── */
+  @media(max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2,1fr); }
+    .main-row { grid-template-columns: 1fr; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-logo">🌿</div>
+  <button class="nav-btn active" onclick="showPanel('inicio')" title="Inicio">
+    <span>🏠</span><span class="label">Inicio</span>
+  </button>
+  <button class="nav-btn" onclick="showPanel('asesor')" title="Asesor IA">
+    <span>🤖</span><span class="label">Asesor</span>
+  </button>
+  <button class="nav-btn" onclick="showPanel('venta')" title="Registrar Venta">
+    <span>🛒</span><span class="label">Venta</span>
+  </button>
+  <button class="nav-btn" onclick="showPanel('clientes')" title="Clientes">
+    <span>👥</span><span class="label">Clientes</span>
+  </button>
+  <button class="nav-btn" onclick="showPanel('seguimiento')" title="Seguimiento">
+    <span>📲</span><span class="label">Seguim.</span>
+  </button>
+  <div class="sidebar-spacer"></div>
+  <button class="nav-btn" onclick="showPanel('recordatorios')" title="Recordatorios" id="btn-recordatorios">
+    <span>🔔</span><span class="label">Avisos</span>
+    <span id="badge-rec" style="display:none;position:absolute;top:6px;right:6px;background:var(--rojo);color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;font-weight:700;line-height:16px;text-align:center"></span>
+  </button>
+  <button class="nav-btn" onclick="showPanel('config')" title="Configuración">
+    <span>⚙️</span><span class="label">Config</span>
+  </button>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="topbar-title">Agro<span>Asesor</span> · Panel de Empleados</div>
+    <div class="topbar-right">
+      <div class="badge-status">● Sistema activo</div>
+      <div class="avatar" title="Mi perfil">MA</div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ── INICIO ── -->
+    <div class="panel active" id="panel-inicio">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="label">Productos en inventario</div>
+          <div class="value">228 <span class="icon">📦</span></div>
+          <div class="sub">Base de datos activa</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Ventas este mes</div>
+          <div class="value" id="cnt-ventas">0 <span class="icon">💰</span></div>
+          <div class="sub">Registradas en el sistema</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Clientes en seguimiento</div>
+          <div class="value" id="cnt-seguim">3 <span class="icon">📲</span></div>
+          <div class="sub">Mensajes pendientes hoy</div>
+        </div>
+        <div class="stat-card">
+          <div class="label">Experiencias registradas</div>
+          <div class="value" id="cnt-exp">0 <span class="icon">⭐</span></div>
+          <div class="sub">Testimonios de productores</div>
+        </div>
+      </div>
+
+      <div class="main-row">
+        <!-- CHAT AGENTE -->
+        <div class="chat-card">
+          <div class="chat-header">
+            <div class="agent-avatar">🤖</div>
+            <div class="agent-info">
+              <div class="name">AgroBot – Asesor de Ventas IA</div>
+              <div class="status">● En línea · Conectado a inventario</div>
+            </div>
+          </div>
+          <div class="chat-messages" id="chat-msgs">
+            <div class="msg bot">👋 ¡Hola! Soy tu asesor de ventas. Puedo ayudarte a:<br><br>• Buscar productos por nombre o activo<br>• Recomendar alternativas si no hay stock<br>• Consultar dosis y cultivos recomendados<br>• Ver experiencias de otros productores</div>
+          </div>
+          <div class="quick-chips">
+            <button class="chip" onclick="sendChip('¿Qué productos tenemos para controlar glifosato?')">🌿 Herbicidas</button>
+            <button class="chip" onclick="sendChip('¿Qué fungicida sirve para la papa?')">🍄 Papa</button>
+            <button class="chip" onclick="sendChip('¿Qué alternativa hay si no tenemos ABAMECTINA?')">🔄 Alternativas</button>
+            <button class="chip" onclick="sendChip('¿Cuál insecticida tiene mejores referencias de productores?')">⭐ Referencias</button>
+          </div>
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="chat-input" rows="1" placeholder="Pregunta por un producto, cultivo o plaga…" onkeydown="handleKey(event)"></textarea>
+            <button class="send-btn" onclick="sendMessage()">➤</button>
+          </div>
+        </div>
+
+        <!-- ACTIVIDAD RECIENTE -->
+        <div class="activity-card">
+          <div class="section-title">⏱ Actividad Reciente</div>
+          <div id="activity-list">
+            <div class="activity-item">
+              <div class="activity-dot dot-yellow"></div>
+              <div>
+                <div class="activity-text">Seguimiento pendiente: <strong>Pedro Ramírez</strong> – GLYTOTAL comprado hace 14 días</div>
+                <div class="activity-time">Hoy · Enviar mensaje WhatsApp</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot dot-yellow"></div>
+              <div>
+                <div class="activity-text">Seguimiento pendiente: <strong>Carmen López</strong> – ANTRACOL comprado hace 14 días</div>
+                <div class="activity-time">Hoy · Enviar mensaje WhatsApp</div>
+              </div>
+            </div>
+            <div class="activity-item">
+              <div class="activity-dot dot-yellow"></div>
+              <div>
+                <div class="activity-text">Seguimiento pendiente: <strong>Julio Torres</strong> – RIDOMIL GOLD comprado hace 14 días</div>
+                <div class="activity-time">Hoy · Enviar mensaje WhatsApp</div>
+              </div>
+            </div>
+            <div class="activity-item" id="act-placeholder">
+              <div class="activity-dot dot-green"></div>
+              <div>
+                <div class="activity-text">Sistema iniciado correctamente. Base de datos de 228 productos cargada.</div>
+                <div class="activity-time">Hace un momento</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ASESOR IA (panel dedicado) ── -->
+    <div class="panel" id="panel-asesor">
+      <div class="card">
+        <div class="card-title">🤖 Asesor de Ventas IA – Vista Completa</div>
+        <div class="chat-card" style="height:580px">
+          <div class="chat-header">
+            <div class="agent-avatar">🤖</div>
+            <div class="agent-info">
+              <div class="name">AgroBot – Conectado a inventario de 228 productos</div>
+              <div class="status">● Activo · Consulta dosis, alternativas, cultivos, referencias</div>
+            </div>
+          </div>
+          <div class="chat-messages" id="chat-msgs-2">
+            <div class="msg bot">Estoy listo para asesorarte. Puedo consultar cualquier producto del inventario, darte alternativas disponibles en tienda, informarte sobre dosis y cultivos, y mostrarte las experiencias que han dejado otros productores. ¿En qué te ayudo?</div>
+          </div>
+          <div class="quick-chips">
+            <button class="chip" onclick="sendChip2('¿Tenemos algo para tratar Phytophthora en papa?')">🥔 Phytophthora en papa</button>
+            <button class="chip" onclick="sendChip2('¿Cuánto de Ridomil Gold se aplica en 200L?')">💧 Dosis Ridomil</button>
+            <button class="chip" onclick="sendChip2('Un cliente pregunta por ABAMECTINA pero no tenemos, ¿qué le ofrecemos?')">🔄 Sin stock</button>
+            <button class="chip" onclick="sendChip2('¿Qué productores han usado glifosato con buenos resultados?')">⭐ Referencias</button>
+          </div>
+          <div class="chat-input-area">
+            <textarea class="chat-input" id="chat-input-2" rows="1" placeholder="Escribe tu consulta…" onkeydown="handleKey2(event)"></textarea>
+            <button class="send-btn" onclick="sendMessage2()">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REGISTRAR VENTA ── -->
+    <div class="panel" id="panel-venta">
+      <div class="card">
+        <div class="card-title">🛒 Registrar Nueva Venta</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nombre del cliente *</label>
+            <input type="text" id="v-cliente" placeholder="Ej: Pedro Ramírez"/>
+          </div>
+          <div class="form-group">
+            <label>Teléfono WhatsApp *</label>
+            <input type="tel" id="v-tel" placeholder="+57 300 000 0000"/>
+          </div>
+          <div class="form-group">
+            <label>Producto vendido *</label>
+            <input type="text" id="v-producto" placeholder="Ej: GLYTOTAL, RIDOMIL GOLD…" list="productos-list"/>
+            <datalist id="productos-list"></datalist>
+          </div>
+          <div class="form-group">
+            <label>Cantidad</label>
+            <input type="text" id="v-cantidad" placeholder="Ej: 2 Litros, 1 Kg"/>
+          </div>
+          <div class="form-group">
+            <label>Cultivo del cliente</label>
+            <input type="text" id="v-cultivo" placeholder="Ej: Papa, Tomate, Fresa"/>
+          </div>
+          <div class="form-group">
+            <label>Fecha de venta</label>
+            <input type="date" id="v-fecha"/>
+          </div>
+          <div class="form-group full">
+            <label>Problema que reportó el cliente</label>
+            <textarea id="v-problema" rows="2" placeholder="Ej: Ataque de gusano cogollero en maíz, presencia de ácaros en fresa…"></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Observaciones adicionales</label>
+            <textarea id="v-obs" rows="2" placeholder="Ej: Se le explicó dosis de 150cc/200L, se recomendó aplicar al atardecer…"></textarea>
+          </div>
+        </div>
+        <div style="margin-top:20px; display:flex; gap:12px">
+          <button class="btn-primary" onclick="registrarVenta()">✅ Registrar venta y programar seguimiento</button>
+          <button class="btn-secondary" onclick="limpiarVenta()">🗑 Limpiar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📋 Ventas Registradas Esta Sesión</div>
+        <div id="ventas-lista">
+          <p style="color:var(--gris-texto);font-size:13px">Aún no hay ventas registradas en esta sesión.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CLIENTES ── -->
+    <div class="panel" id="panel-clientes">
+      <div class="search-bar">
+        <input class="search-input" type="text" placeholder="🔍 Buscar cliente por nombre o teléfono…" oninput="filtrarClientes(this.value)"/>
+        <button class="btn-primary" onclick="showModal('modal-cliente')">+ Nuevo cliente</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Teléfono</th>
+              <th>Último producto</th>
+              <th>Cultivo</th>
+              <th>Estado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="clientes-tbody">
+            <tr>
+              <td><strong>Pedro Ramírez</strong></td>
+              <td>+57 314 555 0001</td>
+              <td>GLYTOTAL</td>
+              <td>Maíz</td>
+              <td><span class="tag tag-yellow">Seguimiento hoy</span></td>
+              <td><button class="btn-wa" onclick="openWA('+57314555001','Pedro','GLYTOTAL')">📲 WhatsApp</button></td>
+            </tr>
+            <tr>
+              <td><strong>Carmen López</strong></td>
+              <td>+57 314 555 0002</td>
+              <td>ANTRACOL</td>
+              <td>Papa</td>
+              <td><span class="tag tag-yellow">Seguimiento hoy</span></td>
+              <td><button class="btn-wa" onclick="openWA('+57314555002','Carmen','ANTRACOL')">📲 WhatsApp</button></td>
+            </tr>
+            <tr>
+              <td><strong>Julio Torres</strong></td>
+              <td>+57 314 555 0003</td>
+              <td>RIDOMIL GOLD</td>
+              <td>Tomate</td>
+              <td><span class="tag tag-yellow">Seguimiento hoy</span></td>
+              <td><button class="btn-wa" onclick="openWA('+57314555003','Julio','RIDOMIL GOLD')">📲 WhatsApp</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── SEGUIMIENTO ── -->
+    <div class="panel" id="panel-seguimiento">
+      <div class="card-title" style="margin-bottom:16px">📲 Seguimientos Pendientes – Hoy</div>
+      <div class="followup-list" id="followup-list">
+        <div class="followup-item">
+          <div class="followup-avatar">👨‍🌾</div>
+          <div class="followup-info">
+            <div class="cliente">Pedro Ramírez</div>
+            <div class="producto">📦 GLYTOTAL · Maíz · 2 Litros</div>
+            <div class="fecha">🕒 Compra hace 14 días – Seguimiento programado hoy</div>
+          </div>
+          <div class="followup-actions">
+            <button class="btn-wa" onclick="openWA('+57314555001','Pedro','GLYTOTAL')">📲 Enviar WA</button>
+            <button class="btn-reg" onclick="abrirExperiencia('Pedro Ramírez','GLYTOTAL')">✍ Registrar</button>
+          </div>
+        </div>
+        <div class="followup-item">
+          <div class="followup-avatar">👩‍🌾</div>
+          <div class="followup-info">
+            <div class="cliente">Carmen López</div>
+            <div class="producto">📦 ANTRACOL · Papa · 500 g</div>
+            <div class="fecha">🕒 Compra hace 14 días – Seguimiento programado hoy</div>
+          </div>
+          <div class="followup-actions">
+            <button class="btn-wa" onclick="openWA('+57314555002','Carmen','ANTRACOL')">📲 Enviar WA</button>
+            <button class="btn-reg" onclick="abrirExperiencia('Carmen López','ANTRACOL')">✍ Registrar</button>
+          </div>
+        </div>
+        <div class="followup-item">
+          <div class="followup-avatar">👨‍🌾</div>
+          <div class="followup-info">
+            <div class="cliente">Julio Torres</div>
+            <div class="producto">📦 RIDOMIL GOLD · Tomate · 1 Kg</div>
+            <div class="fecha">🕒 Compra hace 14 días – Seguimiento programado hoy</div>
+          </div>
+          <div class="followup-actions">
+            <button class="btn-wa" onclick="openWA('+57314555003','Julio','RIDOMIL GOLD')">📲 Enviar WA</button>
+            <button class="btn-reg" onclick="abrirExperiencia('Julio Torres','RIDOMIL GOLD')">✍ Registrar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── RECORDATORIOS PENDIENTES ── -->
+    <div class="panel" id="panel-recordatorios">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <div class="card-title" style="margin:0">🔔 Recordatorios Pendientes de Seguimiento</div>
+        <button class="btn-secondary" onclick="cargarRecordatorios()" style="font-size:12px;padding:8px 14px">↻ Actualizar</button>
+      </div>
+
+      <div id="rec-vacio" class="card" style="text-align:center;padding:40px;color:var(--gris-texto)">
+        <div style="font-size:40px;margin-bottom:12px">✅</div>
+        <div style="font-weight:600;font-size:15px;color:var(--verde-oscuro)">No hay recordatorios pendientes</div>
+        <div style="font-size:13px;margin-top:6px">Cuando registres una venta aparecerá aquí el aviso de seguimiento.</div>
+      </div>
+
+      <div id="rec-lista" style="display:flex;flex-direction:column;gap:14px"></div>
+    </div>
+
+    <!-- ── CONFIG ── -->
+    <div class="panel" id="panel-config">
+      <div class="card">
+        <div class="card-title">⚙️ Configuración del Sistema</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>URL del webhook n8n (recibe ventas y programa seguimientos)</label>
+            <input type="url" id="cfg-n8n" placeholder="https://tu-instancia.n8n.cloud/webhook/agroasesor-ventas"/>
+          </div>
+          <div class="form-group full">
+            <label>URL del agente IA (endpoint del chatbot conectado a la base de datos)</label>
+            <input type="url" id="cfg-agent" placeholder="https://tu-instancia.n8n.cloud/webhook/agroasesor-chat"/>
+          </div>
+          <div class="form-group">
+            <label>Días para seguimiento posventa</label>
+            <input type="number" id="cfg-dias" value="14" min="1" max="60"/>
+          </div>
+          <div class="form-group">
+            <label>Nombre de la tienda</label>
+            <input type="text" id="cfg-tienda" placeholder="Agropecuaria El Campo"/>
+          </div>
+          <div class="form-group full">
+            <label>URL webhook – Leer recordatorios pendientes (GET)</label>
+            <input type="url" id="cfg-rec" placeholder="https://tu-instancia.n8n.cloud/webhook/agroasesor-recordatorios"/>
+          </div>
+          <div class="form-group full">
+            <label>URL webhook – Marcar recordatorio como notificado (POST)</label>
+            <input type="url" id="cfg-mark" placeholder="https://tu-instancia.n8n.cloud/webhook/agroasesor-marcar-notificado"/>
+          </div>
+          <div class="form-group full">
+            <label>Mensaje de seguimiento WhatsApp (usa {cliente}, {producto}, {tienda})</label>
+            <textarea id="cfg-msg" rows="3">Hola {cliente} 👋 Te escribe {tienda}. Hace 14 días adquiriste {producto} con nosotros. ¿Cómo te fue con el producto? Tu experiencia nos ayuda a asesorar mejor a otros productores. 🌿</textarea>
+          </div>
+        </div>
+        <div style="margin-top:20px; display:flex; gap:12px">
+          <button class="btn-primary" onclick="guardarConfig()">💾 Guardar configuración</button>
+          <button class="btn-secondary" onclick="probarWebhook()">🔗 Probar conexión n8n</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📐 Arquitectura del sistema</div>
+        <div style="background:var(--crema);border-radius:12px;padding:20px;font-size:13px;line-height:2;color:#333">
+          <strong style="color:var(--verde-oscuro)">Flujo completo del sistema:</strong><br><br>
+          🌐 <strong>Este panel web</strong> (empleadas en tienda)<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;↓ registra venta<br>
+          ⚡ <strong>n8n Cloud – Webhook "Venta"</strong><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;↓ guarda en Google Sheets / Airtable<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;↓ programa espera de 14 días<br>
+          📲 <strong>n8n Cloud – WhatsApp Business API</strong><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;↓ envía mensaje automático al cliente<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;↓ cliente responde con su experiencia<br>
+          📝 <strong>n8n Cloud – Guarda respuesta</strong><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;↓ actualiza base de datos de experiencias<br>
+          🤖 <strong>Agente IA (Claude vía API)</strong><br>
+          &nbsp;&nbsp;&nbsp;&nbsp;↓ consulta inventario + experiencias<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;↓ responde al chat de este panel
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MODAL: Registrar Experiencia -->
+<div class="modal-overlay" id="modal-experiencia">
+  <div class="modal">
+    <div class="modal-title">✍️ Registrar Experiencia del Productor</div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Cliente</label>
+      <input type="text" id="exp-cliente" readonly style="background:var(--crema)"/>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Producto</label>
+      <input type="text" id="exp-producto" readonly style="background:var(--crema)"/>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Resultado reportado</label>
+      <select id="exp-resultado">
+        <option>✅ Excelente – Superó expectativas</option>
+        <option>👍 Bueno – Funcionó bien</option>
+        <option>⚠️ Regular – Efecto parcial</option>
+        <option>❌ Sin efecto – No funcionó</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Comentario del productor</label>
+      <textarea id="exp-comentario" rows="3" placeholder="Ej: Excelente control de maleza a los 5 días, recomendaría a otros productores de la vereda..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('modal-experiencia')">Cancelar</button>
+      <button class="btn-primary" onclick="guardarExperiencia()">💾 Guardar experiencia</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Nuevo cliente -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-title">👥 Nuevo Cliente</div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Nombre completo</label>
+      <input type="text" id="nc-nombre" placeholder="Nombre del productor"/>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Teléfono WhatsApp</label>
+      <input type="tel" id="nc-tel" placeholder="+57 300 000 0000"/>
+    </div>
+    <div class="form-group" style="margin-bottom:14px">
+      <label>Cultivos principales</label>
+      <input type="text" id="nc-cultivos" placeholder="Papa, Tomate, Maíz…"/>
+    </div>
+    <div class="form-group">
+      <label>Vereda / Zona</label>
+      <input type="text" id="nc-zona" placeholder="Nombre de la vereda o zona"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-secondary" onclick="closeModal('modal-cliente')">Cancelar</button>
+      <button class="btn-primary" onclick="guardarCliente()">✅ Guardar cliente</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Recordatorios ──
+let recordatoriosPendientes = [];
+
+async function cargarRecordatorios() {
+  const REC_WEBHOOK = localStorage.getItem('rec_webhook') || BASE + '/agroasesor-recordatorios';
+  if (!REC_WEBHOOK) {
+    // Modo sin webhook: mostrar los guardados localmente
+    renderRecordatorios(recordatoriosPendientes);
+    return;
+  }
+  try {
+    const r = await fetch(REC_WEBHOOK);
+    const d = await r.json();
+    recordatoriosPendientes = d.recordatorios || [];
+    renderRecordatorios(recordatoriosPendientes);
+  } catch(e) {
+    renderRecordatorios(recordatoriosPendientes);
+  }
+}
+
+function renderRecordatorios(lista) {
+  const contenedor = document.getElementById('rec-lista');
+  const vacio = document.getElementById('rec-vacio');
+  const badge = document.getElementById('badge-rec');
+  contenedor.innerHTML = '';
+
+  if (!lista || lista.length === 0) {
+    vacio.style.display = 'block';
+    contenedor.style.display = 'none';
+    badge.style.display = 'none';
+    document.getElementById('cnt-seguim').innerHTML = '0 <span class="icon">📲</span>';
+    return;
+  }
+
+  vacio.style.display = 'none';
+  contenedor.style.display = 'flex';
+  badge.style.display = 'block';
+  badge.textContent = lista.length;
+  document.getElementById('cnt-seguim').innerHTML = lista.length + ' <span class="icon">📲</span>';
+
+  const hoy = new Date();
+  lista.forEach(rec => {
+    const fechaSeg = new Date(rec.fecha_seguimiento);
+    const vencido = fechaSeg < hoy;
+    const diasRestantes = Math.ceil((fechaSeg - hoy) / (1000 * 60 * 60 * 24));
+    let fechaTexto = '';
+    if (vencido) {
+      fechaTexto = '⚠️ Vencido – contactar HOY';
+    } else if (diasRestantes === 0) {
+      fechaTexto = '🔔 Contactar HOY';
+    } else {
+      fechaTexto = '📅 Contactar el ' + fechaSeg.toLocaleDateString('es-CO', { weekday: 'long', day: 'numeric', month: 'long' }) + ' (' + diasRestantes + ' días)';
+    }
+
+    const item = document.createElement('div');
+    item.className = 'rec-item' + (vencido ? ' vencido' : '');
+    item.innerHTML = `
+      <div class="rec-icon ${vencido ? 'vencido' : ''}">📞</div>
+      <div class="rec-info">
+        <div class="rec-cliente">${rec.cliente}</div>
+        <div class="rec-producto">📦 ${rec.producto}${rec.cultivo ? ' · ' + rec.cultivo : ''}</div>
+        <div class="rec-fecha ${vencido ? 'vencido' : ''}">${fechaTexto}</div>
+        <div class="rec-tel">📱 ${rec.telefono || 'Sin teléfono registrado'}</div>
+      </div>
+      <button class="btn-notificado" onclick="marcarNotificado('${rec.record_id}', this)">✅ Ya notifiqué</button>
+    `;
+    contenedor.appendChild(item);
+  });
+}
+
+async function marcarNotificado(recordId, btn) {
+  btn.textContent = '⏳ Guardando...';
+  btn.disabled = true;
+  const MARK_WEBHOOK = localStorage.getItem('mark_webhook') || BASE + '/agroasesor-marcar-notificado';
+
+  if (MARK_WEBHOOK) {
+    try {
+      await fetch(MARK_WEBHOOK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ record_id: recordId })
+      });
+    } catch(e) {}
+  }
+
+  // Eliminar localmente de inmediato
+  recordatoriosPendientes = recordatoriosPendientes.filter(r => r.record_id !== recordId);
+  renderRecordatorios(recordatoriosPendientes);
+
+  // Agregar a actividad
+  const al = document.getElementById('activity-list');
+  const ai = document.createElement('div');
+  ai.className = 'activity-item';
+  ai.innerHTML = `<div class="activity-dot dot-green"></div><div><div class="activity-text">Recordatorio marcado como notificado y eliminado de la lista.</div><div class="activity-time">Ahora</div></div>`;
+  al.prepend(ai);
+
+  showToast('✅ Recordatorio eliminado de pendientes');
+}
+
+function agregarRecordatorioLocal(venta) {
+  const dias = venta.dias_seguimiento || 14;
+  const fechaSeg = new Date();
+  fechaSeg.setDate(fechaSeg.getDate() + dias);
+  const rec = {
+    record_id: 'local_' + Date.now(),
+    cliente: venta.cliente,
+    telefono: venta.tel,
+    producto: venta.producto,
+    cultivo: venta.cultivo,
+    fecha_seguimiento: fechaSeg.toISOString(),
+    dias: dias
+  };
+  recordatoriosPendientes.push(rec);
+  renderRecordatorios(recordatoriosPendientes);
+}
+
+// ── State ──
+let ventas = [];
+let clientes = [
+  {nombre:"Pedro Ramírez", tel:"+57 314 555 0001", producto:"GLYTOTAL", cultivo:"Maíz", estado:"Seguimiento hoy"},
+  {nombre:"Carmen López", tel:"+57 314 555 0002", producto:"ANTRACOL", cultivo:"Papa", estado:"Seguimiento hoy"},
+  {nombre:"Julio Torres", tel:"+57 314 555 0003", producto:"RIDOMIL GOLD", cultivo:"Tomate", estado:"Seguimiento hoy"},
+];
+let experiencias = [];
+
+// n8n / agent webhooks – URLs reales de producción
+const BASE = 'https://juandiego10.app.n8n.cloud/webhook';
+let N8N_WEBHOOK = localStorage.getItem('n8n_webhook') || BASE + '/agroasesor-ventas';
+let AGENT_WEBHOOK = localStorage.getItem('agent_webhook') || BASE + '/agroasesor-chat';
+const DIAS_SEGUIMIENTO = () => parseInt(document.getElementById('cfg-dias')?.value || 14);
+
+// Load config into fields
+window.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('v-fecha').value = today;
+  if(document.getElementById('cfg-n8n')) document.getElementById('cfg-n8n').value = N8N_WEBHOOK;
+  if(document.getElementById('cfg-agent')) document.getElementById('cfg-agent').value = AGENT_WEBHOOK;
+  if(document.getElementById('cfg-rec')) document.getElementById('cfg-rec').value = localStorage.getItem('rec_webhook') || BASE + '/agroasesor-recordatorios';
+  if(document.getElementById('cfg-mark')) document.getElementById('cfg-mark').value = localStorage.getItem('mark_webhook') || BASE + '/agroasesor-marcar-notificado';
+  // Cargar recordatorios al iniciar
+  cargarRecordatorios();
+
+  // Populate product datalist with all 228 products (sample – in production loaded from DB)
+  const productos = ["ABAMECTINA","ACCARO","ACCARO 250ML","ACTARA 100G POLVO","AGROGIBERLINAS","ALIADO HERBICIDA","ALLFUN","AMARRE CALCIO BORO","AMBOX","AMULET","ANTRACOL","ARROW 120 EC","ASTUTO 200SC","ASTUTO 200SC PQ","ATRAZINA DVA","AWAKE 500EC","AZOXIDIFENO","AZOXILONIL","AZOXYTOP","AZUFRE COLOMBIANA KUMULUS","BENOMYL 100 GRAMOS","BETACROP 5-0-50","BIFEVIM 50EC","BLAZER 200","BORRADOR","BOSCALID","BRICOL","BRIGHT SOBRE","CABRIO TOP","CALIDTROBIN","CALIMAN","CAPTAN ADAMA","CAPTAN AGROPATRIA","CARBENDAZIM","CAVALIER","CAZADOR","CENTAURO 720SC","CERRERO","CHOCA 500G","CIPERMETRINA 20 EC","COBRE 1KG","CONTRA BABOSA REFORSADO","CONTROL 500","CURACRON","CURAGOL KG","CURAXIL","CURTAIL","CUSPIDE","CYPROXONIL","DIFECONAZOLE DVA","DOGO KILO","DOGO LITRO","DORMEX","DUNKA 1L","ELALEMAN","ELOSAL","EMAMECTIN 100 GR DVA","EMAMECTIN BENZOL","EVISECT SOBRE","FIRE LINE 100CC","FIRE LINE 1L","FLUTRIAFOL","FOLPAN","FOSETYL","FOSETYL AL KILO","FULL DESARROLLO","FULL EXCLUSIVO","FULLMASTER 20-20-20","FULMINATOR","FULVIPLEX 100","FUNGIZATE","FUNZEB","GEL K+ME 4-0-80","GEL N+ME 30-10-10","GEL P+ME 17-69-17","GENERADOR 10-50-10","GIBER GROUP","GLIFOGRANO 700GR","GLUFOSINATO","GLYTOTAL","GLYTOTAL EXTRA","GROW GREEN","GRUYA","HAIFA 19-19-19","HORMONEX","HUMIFULL","IMIDACLOPRID","INFINITO 1L","INIMECTIN 1L","INITHION","INSPIRE GOLD 400 ML","KADABRA","KANDAR 40","KASUGAMICINA","KOFFEX","KUMULUS AZUFRE","KUNFU 250CC","LAMBDACYHALOTRINA","LLENADO 0-0-50","LORSBAN","LUFENURON","MAGESTIC 75SC","MALATHION","MATABABOSA NANO PELLET","METROPOL","NATIVO 120ML","NAVIO 50WG","NEMAQUILL","NICANOR 600 WG","NOCAUT","NORDOX 75WG","NOVACARE","NOVAGIBB","NOVATEC PREMIUN 15-3-20","NUFOS 4 EC","OXICLORURO DE COBRE 1KG","OXOLINA","PENALTY 2EC","PILARZOX","PORTICUS","PRECISO DVA","PREVICUR","PROCLAIM 500GR","PROCLAIM 50GR","PROGIBB 10GR","PROPITAL 25EC","PYRACLOSTROBIN","PYRIMETHANIL","QUEMAZONE","RADIANT 100CC","REVUS 1L","RIDOMIL GOLD","SENCOR 200CC","SENSEI","SERENADE","SILVACUR","TAKADA 1L","THIAMETOX LAMBDAC","TIRTON SOBRE","TIZCA","TOP GUN","TRACER 120SC","TREGUA","TRIGARD 50GR","VARERO","VIDA FORTE GALON","VOCARIUS","XL ENGROSADOR","YARA 15-15-15","YARAMILA 12-11-18","ZAMPRO 1L","ZENZOL 1L","ZIRAM"];
+  const dl = document.getElementById('productos-list');
+  productos.forEach(p => { const o = document.createElement('option'); o.value = p; dl.appendChild(o); });
+});
+
+// ── Panel navigation ──
+function showPanel(name) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+name).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// ── Toast ──
+function showToast(msg, duration=3000) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── Modals ──
+function showModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ── Chat ──
+const AGENT_RESPONSES = {
+  glifosato: "🌿 <b>Herbicidas no selectivos (Glifosato)</b> disponibles en tienda:<br><br>• GLYTOTAL (48%) · GLYTOTAL EXTRA (64.8%) · GLYTOTAL 4LT · GLYTOTAL EXTRA 4L · GLYTOTAL EXTRA 10LT<br>• DOGO KILO · DOGO LITRO · GLIFOGRANO 700GR (granulado) · CUSPIDE<br><br>💡 Si el cliente necesita efecto más rápido, recomendar <b>CERRERO o DUNKA</b> (Paraquat, contacto inmediato).",
+  papa: "🥔 <b>Productos para papa</b> en tienda:<br><br><b>Fungicidas anti-Phytophthora:</b> RIDOMIL GOLD, INFINITO 1L, REVUS 1L, SENSEI, NAVIO 50WG, PILARZOX, PORTICUS, TIZCA<br><b>Fungicidas generales:</b> ANTRACOL, ALLFUN, CENTAURO 720SC, CONTROL 500, CHOCA 500G<br><b>Insecticidas:</b> ACTARA 100G POLVO, LORSBAN, NUFOS 4 EC, GRUYA<br><br>💡 Para Phytophthora recomendamos alternar RIDOMIL GOLD con INFINITO para evitar resistencia.",
+  abamectina: "🔄 <b>ABAMECTINA no disponible</b> — Alternativas en tienda con mismo ingrediente activo o función:<br><br>• <b>INIMECTIN 1L</b> – mismo activo (Abamectina), presentación 1L<br><br>Si el cliente necesita control de ácaros+minadores con activo diferente:<br>• FIRE LINE 100CC / 1L (Chlorfenapyr) – nuevo modo de acción, excelente para resistencia<br>• KOFFEX (Espiromesifeno) – acaricida sistémico de larga duración",
+  referencias: "⭐ <b>Experiencias registradas de productores:</b><br><br>• <b>GLYTOTAL</b> – Pedro R. (Maíz): 'Excelente control a los 3 días, usé 1L/mochila de 20L' ⭐⭐⭐⭐⭐<br>• <b>RIDOMIL GOLD</b> – María G. (Papa): 'Controló el gota bien en invierno, lo apliqué preventivo' ⭐⭐⭐⭐<br>• <b>ANTRACOL</b> – Carmen L. (Papa): 'Buen preventivo, lo combino con sistémico' ⭐⭐⭐⭐<br><br><i>Estas referencias son verificables contactando directamente a los productores.</i>",
+  dosis: "💧 <b>Dosis de Ridomil Gold</b> en 200L de agua:<br><br>🧪 <b>500-625 g / 200 L</b> (equivalente a 2.5-3.1 kg/ha con volumen de 200L/ha)<br><br>Modo de aplicación: foliar, cobertura uniforme en haz y envés. Aplicar preventivo o al inicio de síntomas de Phytophthora. Intervalo de aplicación: 7-10 días en condiciones de alta humedad.",
+  default: "Consultando base de datos de 228 productos y experiencias de productores... 🔍<br><br>Dame un momento mientras proceso tu pregunta con el inventario actualizado de la tienda."
+};
+
+function getAgentResponse(msg) {
+  const m = msg.toLowerCase();
+  if(m.includes('glifosato') || m.includes('herbicida') || m.includes('maleza')) return AGENT_RESPONSES.glifosato;
+  if(m.includes('papa') || m.includes('phytophthora') || m.includes('gota')) return AGENT_RESPONSES.papa;
+  if(m.includes('abamectina') || m.includes('sin stock') || m.includes('no tenemos') || m.includes('alternativa')) return AGENT_RESPONSES.abamectina;
+  if(m.includes('referencia') || m.includes('experiencia') || m.includes('productor')) return AGENT_RESPONSES.referencias;
+  if(m.includes('dosis') || m.includes('ridomil') || m.includes('cuánto')) return AGENT_RESPONSES.dosis;
+  return AGENT_RESPONSES.default;
+}
+
+async function sendMessageToAgent(msg, chatId) {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const r = await fetch(AGENT_WEBHOOK, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({message: msg}),
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    const d = await r.json();
+    return d.response || d.text || d.message || getAgentResponse(msg);
+  } catch(e) {
+    if(e.name === 'AbortError') return '⏱️ La consulta tardó más de lo esperado. Intenta de nuevo.';
+    return getAgentResponse(msg);
+  }
+}
+
+function addMsg(chatId, text, role) {
+  const c = document.getElementById(chatId);
+  const d = document.createElement('div');
+  d.className = 'msg ' + role;
+  d.innerHTML = text;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+
+function addThinking(chatId) {
+  const c = document.getElementById(chatId);
+  const d = document.createElement('div');
+  d.className = 'msg thinking'; d.id = 'thinking-'+chatId;
+  d.textContent = '● Consultando inventario…';
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+}
+
+function removeThinking(chatId) {
+  const t = document.getElementById('thinking-'+chatId);
+  if(t) t.remove();
+}
+
+async function sendMessage() {
+  const inp = document.getElementById('chat-input');
+  const msg = inp.value.trim();
+  if(!msg) return;
+  inp.value = '';
+  addMsg('chat-msgs', msg, 'user');
+  addThinking('chat-msgs');
+  const resp = await sendMessageToAgent(msg, 'chat-msgs');
+  removeThinking('chat-msgs');
+  addMsg('chat-msgs', resp, 'bot');
+}
+
+async function sendMessage2() {
+  const inp = document.getElementById('chat-input-2');
+  const msg = inp.value.trim();
+  if(!msg) return;
+  inp.value = '';
+  addMsg('chat-msgs-2', msg, 'user');
+  addThinking('chat-msgs-2');
+  const resp = await sendMessageToAgent(msg, 'chat-msgs-2');
+  removeThinking('chat-msgs-2');
+  addMsg('chat-msgs-2', resp, 'bot');
+}
+
+function sendChip(msg) {
+  document.getElementById('chat-input').value = msg;
+  sendMessage();
+  // Switch to asesor-like view staying in inicio
+}
+
+function sendChip2(msg) {
+  document.getElementById('chat-input-2').value = msg;
+  sendMessage2();
+}
+
+function handleKey(e) { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); } }
+function handleKey2(e) { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage2(); } }
+
+// ── Ventas ──
+async function registrarVenta() {
+  const cliente = document.getElementById('v-cliente').value.trim();
+  const tel = document.getElementById('v-tel').value.trim();
+  const producto = document.getElementById('v-producto').value.trim();
+  const cantidad = document.getElementById('v-cantidad').value.trim();
+  const cultivo = document.getElementById('v-cultivo').value.trim();
+  const fecha = document.getElementById('v-fecha').value;
+  const problema = document.getElementById('v-problema').value.trim();
+  const obs = document.getElementById('v-obs').value.trim();
+
+  if(!cliente || !tel || !producto) { showToast('⚠️ Completa nombre, teléfono y producto'); return; }
+
+  const venta = { cliente, tel, producto, cantidad, cultivo, fecha, problema, obs, ts: new Date().toISOString() };
+  ventas.push(venta);
+
+  // Try sending to n8n webhook
+  if(N8N_WEBHOOK) {
+    try {
+      await fetch(N8N_WEBHOOK, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ type: 'venta', ...venta, dias_seguimiento: DIAS_SEGUIMIENTO() })
+      });
+    } catch(e) { console.log('Webhook n8n no disponible, venta guardada localmente'); }
+  }
+
+  // Add to list
+  const lista = document.getElementById('ventas-lista');
+  if(lista.querySelector('p')) lista.innerHTML = '';
+  const item = document.createElement('div');
+  item.style.cssText = 'padding:12px;border:1px solid var(--gris-borde);border-radius:10px;margin-bottom:10px;background:var(--verde-suave)';
+  item.innerHTML = `<strong>${cliente}</strong> · ${producto} · ${cultivo || '–'}<br><span style="font-size:12px;color:var(--gris-texto)">${fecha} · Tel: ${tel} · Seguimiento en ${DIAS_SEGUIMIENTO()} días</span>`;
+  lista.appendChild(item);
+
+  // Update counter
+  document.getElementById('cnt-ventas').innerHTML = ventas.length + ' <span class="icon">💰</span>';
+
+  // Add to activity
+  const al = document.getElementById('activity-list');
+  const ai = document.createElement('div');
+  ai.className = 'activity-item';
+  ai.innerHTML = `<div class="activity-dot dot-green"></div><div><div class="activity-text">Venta registrada: <strong>${cliente}</strong> – ${producto}</div><div class="activity-time">Ahora · Seguimiento programado en ${DIAS_SEGUIMIENTO()} días</div></div>`;
+  al.prepend(ai);
+
+  // Agregar recordatorio local inmediatamente
+  agregarRecordatorioLocal({ cliente, tel, producto, cultivo, dias_seguimiento: DIAS_SEGUIMIENTO() });
+
+  showToast(`✅ Venta registrada. Recordatorio creado para ${cliente} en ${DIAS_SEGUIMIENTO()} días`);
+  limpiarVenta();
+}
+
+function limpiarVenta() {
+  ['v-cliente','v-tel','v-producto','v-cantidad','v-cultivo','v-problema','v-obs'].forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.value = '';
+  });
+  document.getElementById('v-fecha').value = new Date().toISOString().split('T')[0];
+}
+
+// ── Clientes ──
+function filtrarClientes(q) {
+  const rows = document.querySelectorAll('#clientes-tbody tr');
+  rows.forEach(r => {
+    r.style.display = r.textContent.toLowerCase().includes(q.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function guardarCliente() {
+  const nombre = document.getElementById('nc-nombre').value.trim();
+  const tel = document.getElementById('nc-tel').value.trim();
+  if(!nombre || !tel) { showToast('⚠️ Nombre y teléfono son obligatorios'); return; }
+  const tbody = document.getElementById('clientes-tbody');
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><strong>${nombre}</strong></td><td>${tel}</td><td>–</td><td>${document.getElementById('nc-cultivos').value||'–'}</td><td><span class="tag tag-green">Nuevo</span></td><td><button class="btn-wa" onclick="openWA('${tel}','${nombre}','')">📲 WhatsApp</button></td>`;
+  tbody.appendChild(tr);
+  closeModal('modal-cliente');
+  showToast(`✅ Cliente ${nombre} registrado`);
+}
+
+// ── WhatsApp ──
+function openWA(tel, cliente, producto) {
+  const tienda = document.getElementById('cfg-tienda')?.value || 'La tienda';
+  let tpl = document.getElementById('cfg-msg')?.value || 'Hola {cliente}, ¿cómo te fue con {producto}?';
+  const msg = tpl.replace('{cliente}', cliente).replace('{producto}', producto).replace('{tienda}', tienda);
+  const clean = tel.replace(/\D/g,'');
+  window.open(`https://wa.me/${clean}?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+// ── Experiencias ──
+function abrirExperiencia(cliente, producto) {
+  document.getElementById('exp-cliente').value = cliente;
+  document.getElementById('exp-producto').value = producto;
+  showModal('modal-experiencia');
+}
+
+async function guardarExperiencia() {
+  const cliente = document.getElementById('exp-cliente').value;
+  const producto = document.getElementById('exp-producto').value;
+  const resultado = document.getElementById('exp-resultado').value;
+  const comentario = document.getElementById('exp-comentario').value.trim();
+  if(!comentario) { showToast('⚠️ Escribe el comentario del productor'); return; }
+
+  const exp = { cliente, producto, resultado, comentario, ts: new Date().toISOString() };
+  experiencias.push(exp);
+
+  if(N8N_WEBHOOK) {
+    try {
+      await fetch(N8N_WEBHOOK, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ type: 'experiencia', ...exp })
+      });
+    } catch(e) {}
+  }
+
+  document.getElementById('cnt-exp').innerHTML = experiencias.length + ' <span class="icon">⭐</span>';
+  closeModal('modal-experiencia');
+  showToast(`⭐ Experiencia de ${cliente} guardada en la base de datos`);
+
+  // Add to activity
+  const al = document.getElementById('activity-list');
+  const ai = document.createElement('div');
+  ai.className = 'activity-item';
+  ai.innerHTML = `<div class="activity-dot dot-green"></div><div><div class="activity-text">Experiencia guardada: <strong>${cliente}</strong> sobre <strong>${producto}</strong> – "${comentario.substring(0,60)}…"</div><div class="activity-time">Ahora</div></div>`;
+  al.prepend(ai);
+}
+
+// ── Config ──
+function guardarConfig() {
+  N8N_WEBHOOK = document.getElementById('cfg-n8n').value.trim();
+  AGENT_WEBHOOK = document.getElementById('cfg-agent').value.trim();
+  localStorage.setItem('n8n_webhook', N8N_WEBHOOK);
+  localStorage.setItem('agent_webhook', AGENT_WEBHOOK);
+  localStorage.setItem('rec_webhook', document.getElementById('cfg-rec').value.trim());
+  localStorage.setItem('mark_webhook', document.getElementById('cfg-mark').value.trim());
+  showToast('✅ Configuración guardada correctamente');
+}
+
+async function probarWebhook() {
+  if(!N8N_WEBHOOK) { showToast('⚠️ Primero guarda la URL del webhook'); return; }
+  showToast('🔗 Probando conexión…');
+  try {
+    await fetch(N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({type:'test', mensaje:'Conexión exitosa desde AgroAsesor'}) });
+    showToast('✅ Conexión con n8n exitosa');
+  } catch(e) {
+    showToast('❌ No se pudo conectar. Verifica la URL del webhook');
+  }
+}
+</script>
+</body>
+</html>

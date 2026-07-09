@@ -840,7 +840,7 @@ const AGENT_RESPONSES = {
   abamectina: "🔄 <b>ABAMECTINA no disponible</b> — Alternativas en tienda con mismo ingrediente activo o función:<br><br>• <b>INIMECTIN 1L</b> – mismo activo (Abamectina), presentación 1L<br><br>Si el cliente necesita control de ácaros+minadores con activo diferente:<br>• FIRE LINE 100CC / 1L (Chlorfenapyr) – nuevo modo de acción, excelente para resistencia<br>• KOFFEX (Espiromesifeno) – acaricida sistémico de larga duración",
   referencias: "⭐ <b>Experiencias registradas de productores:</b><br><br>• <b>GLYTOTAL</b> – Pedro R. (Maíz): 'Excelente control a los 3 días, usé 1L/mochila de 20L' ⭐⭐⭐⭐⭐<br>• <b>RIDOMIL GOLD</b> – María G. (Papa): 'Controló el gota bien en invierno, lo apliqué preventivo' ⭐⭐⭐⭐<br>• <b>ANTRACOL</b> – Carmen L. (Papa): 'Buen preventivo, lo combino con sistémico' ⭐⭐⭐⭐<br><br><i>Estas referencias son verificables contactando directamente a los productores.</i>",
   dosis: "💧 <b>Dosis de Ridomil Gold</b> en 200L de agua:<br><br>🧪 <b>500-625 g / 200 L</b> (equivalente a 2.5-3.1 kg/ha con volumen de 200L/ha)<br><br>Modo de aplicación: foliar, cobertura uniforme en haz y envés. Aplicar preventivo o al inicio de síntomas de Phytophthora. Intervalo de aplicación: 7-10 días en condiciones de alta humedad.",
-  default: "⏱️ La respuesta tardó más de lo esperado. La venta o consulta <b>sí fue procesada</b> en el sistema. Puedes verificar en Airtable o intentar de nuevo."
+  default: "❌ Error de conexión. Verifica tu internet e intenta de nuevo."
 };
 
 function getAgentResponse(msg) {
@@ -859,25 +859,18 @@ const SESSION_ID = 'session_' + Date.now();
 
 async function sendMessageToAgent(msg, chatId) {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 60000);
-    
-    // Enviar historial completo con cada mensaje
+    // Sin timeout - esperar indefinidamente hasta que Claude responda
     const payload = { 
       message: msg, 
       historial: chatHistorial,
       session_id: SESSION_ID
     };
     
-    console.log('Enviando historial:', chatHistorial.length, 'mensajes');
-    
     const r = await fetch(AGENT_WEBHOOK, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload),
-      signal: controller.signal
+      body: JSON.stringify(payload)
     });
-    clearTimeout(timeoutId);
     const d = await r.json();
     const respuesta = d.response || d.text || d.message || getAgentResponse(msg);
 
@@ -945,8 +938,8 @@ async function sendMessageToAgent(msg, chatId) {
 
     return respuesta;
   } catch(e) {
-    if(e.name === 'AbortError') return '⏱️ La operación tardó más de 60s. Si registraste una venta, <b>sí quedó guardada en Airtable</b>. Puedes verificarlo o intentar de nuevo.';
-    return getAgentResponse(msg);
+    console.error('Error en chat:', e);
+    return '❌ Error de conexión. Verifica tu internet e intenta de nuevo.';
   }
 }
 
@@ -963,7 +956,7 @@ function addThinking(chatId) {
   const c = document.getElementById(chatId);
   const d = document.createElement('div');
   d.className = 'msg thinking'; d.id = 'thinking-'+chatId;
-  d.textContent = '● Consultando inventario…';
+  d.innerHTML = '🌿 AgroBot está consultando el inventario y preparando tu respuesta...<br><small style="opacity:0.7">Esto puede tomar unos segundos</small>';
   c.appendChild(d);
   c.scrollTop = c.scrollHeight;
 }

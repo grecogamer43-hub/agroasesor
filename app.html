@@ -755,15 +755,22 @@ async function marcarNotificado(recordId, btn) {
 }
 
 function agregarRecordatorioLocal(venta) {
-  const dias = venta.dias_seguimiento || 14;
+  const dias = parseInt(venta.dias_seguimiento) || 14;
   const fechaSeg = new Date();
   fechaSeg.setDate(fechaSeg.getDate() + dias);
+  // Normalize: chat sends .tel, form sends .tel too, but action sends .tel also
+  const cliente = venta.cliente || '';
+  const telefono = venta.tel || venta.telefono || '';
+  const producto = venta.producto || '';
+  const cultivo = venta.cultivo || '';
+  // Skip if no valid data
+  if (!cliente || cliente === 'undefined' || !producto || producto === 'undefined') return;
   const rec = {
     record_id: 'local_' + Date.now(),
-    cliente: venta.cliente,
-    telefono: venta.tel,
-    producto: venta.producto,
-    cultivo: venta.cultivo,
+    cliente: cliente,
+    telefono: telefono,
+    producto: producto,
+    cultivo: cultivo,
     fecha_seguimiento: fechaSeg.toISOString(),
     dias: dias
   };
@@ -794,7 +801,10 @@ window.addEventListener('DOMContentLoaded', () => {
   if(document.getElementById('cfg-agent')) document.getElementById('cfg-agent').value = AGENT_WEBHOOK;
   if(document.getElementById('cfg-rec')) document.getElementById('cfg-rec').value = localStorage.getItem('rec_webhook') || BASE + '/agroasesor-recordatorios';
   if(document.getElementById('cfg-mark')) document.getElementById('cfg-mark').value = localStorage.getItem('mark_webhook') || BASE + '/agroasesor-marcar-notificado';
-  // Cargar recordatorios al iniciar
+  // Limpiar recordatorios invalidos y cargar
+  recordatoriosPendientes = recordatoriosPendientes.filter(r =>
+    r.cliente && r.cliente !== "undefined" && r.producto && r.producto !== "undefined"
+  );
   cargarRecordatorios();
 
   // Populate product datalist with all 228 products (sample – in production loaded from DB)
@@ -1003,16 +1013,16 @@ function handleKey2(e) { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault();
 
 // ── Ventas ──
 function agregarClienteLocal(nombre, tel, cultivo, producto) {
+  if (!nombre || nombre === 'undefined' || !producto || producto === 'undefined') return;
   const tbody = document.getElementById('clientes-tbody');
   if (!tbody) return;
   // Check if client already exists
   const rows = tbody.querySelectorAll('tr');
   for (const row of rows) {
-    if (row.textContent.includes(nombre) && row.textContent.includes(tel)) return;
+    if (row.textContent.includes(nombre)) return;
   }
   const tr = document.createElement('tr');
-  const fecha = new Date().toLocaleDateString('es-CO');
-  tr.innerHTML = `<td><strong>${nombre}</strong></td><td>${tel}</td><td>${producto}</td><td>${cultivo || '–'}</td><td><span class="tag tag-green">Nuevo</span></td><td><button class="btn-wa" onclick="openWA('${tel}','${nombre}','${producto}')">📲 WhatsApp</button></td>`;
+  tr.innerHTML = `<td><strong>${nombre}</strong></td><td>${tel||'–'}</td><td>${producto}</td><td>${cultivo||'–'}</td><td><span class="tag tag-green">Nuevo</span></td><td><button class="btn-wa" onclick="openWA('${tel||''}','${nombre}','${producto}')">📲 WhatsApp</button></td>`;
   tbody.appendChild(tr);
 }
 

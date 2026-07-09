@@ -247,9 +247,7 @@
   <button class="nav-btn active" onclick="showPanel('inicio')" title="Inicio">
     <span>🏠</span><span class="label">Inicio</span>
   </button>
-  <button class="nav-btn" onclick="showPanel('asesor')" title="Asesor IA">
-    <span>🤖</span><span class="label">Asesor</span>
-  </button>
+
   <button class="nav-btn" onclick="showPanel('venta')" title="Registrar Venta">
     <span>🛒</span><span class="label">Venta</span>
   </button>
@@ -365,35 +363,6 @@
                 <div class="activity-time">Hace un momento</div>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── ASESOR IA (panel dedicado) ── -->
-    <div class="panel" id="panel-asesor">
-      <div class="card">
-        <div class="card-title">🤖 Asesor de Ventas IA – Vista Completa</div>
-        <div class="chat-card" style="height:580px">
-          <div class="chat-header">
-            <div class="agent-avatar">🤖</div>
-            <div class="agent-info">
-              <div class="name">AgroBot – Conectado a inventario de 228 productos</div>
-              <div class="status">● Activo · Consulta dosis, alternativas, cultivos, referencias</div>
-            </div>
-          </div>
-          <div class="chat-messages" id="chat-msgs-2">
-            <div class="msg bot">Estoy listo para asesorarte. Puedo consultar cualquier producto del inventario, darte alternativas disponibles en tienda, informarte sobre dosis y cultivos, y mostrarte las experiencias que han dejado otros productores. ¿En qué te ayudo?</div>
-          </div>
-          <div class="quick-chips">
-            <button class="chip" onclick="sendChip2('¿Tenemos algo para tratar Phytophthora en papa?')">🥔 Phytophthora en papa</button>
-            <button class="chip" onclick="sendChip2('¿Cuánto de Ridomil Gold se aplica en 200L?')">💧 Dosis Ridomil</button>
-            <button class="chip" onclick="sendChip2('Un cliente pregunta por ABAMECTINA pero no tenemos, ¿qué le ofrecemos?')">🔄 Sin stock</button>
-            <button class="chip" onclick="sendChip2('¿Qué productores han usado glifosato con buenos resultados?')">⭐ Referencias</button>
-          </div>
-          <div class="chat-input-area">
-            <textarea class="chat-input" id="chat-input-2" rows="1" placeholder="Escribe tu consulta…" onkeydown="handleKey2(event)"></textarea>
-            <button class="send-btn" onclick="sendMessage2()">➤</button>
           </div>
         </div>
       </div>
@@ -861,7 +830,7 @@ const AGENT_RESPONSES = {
   abamectina: "🔄 <b>ABAMECTINA no disponible</b> — Alternativas en tienda con mismo ingrediente activo o función:<br><br>• <b>INIMECTIN 1L</b> – mismo activo (Abamectina), presentación 1L<br><br>Si el cliente necesita control de ácaros+minadores con activo diferente:<br>• FIRE LINE 100CC / 1L (Chlorfenapyr) – nuevo modo de acción, excelente para resistencia<br>• KOFFEX (Espiromesifeno) – acaricida sistémico de larga duración",
   referencias: "⭐ <b>Experiencias registradas de productores:</b><br><br>• <b>GLYTOTAL</b> – Pedro R. (Maíz): 'Excelente control a los 3 días, usé 1L/mochila de 20L' ⭐⭐⭐⭐⭐<br>• <b>RIDOMIL GOLD</b> – María G. (Papa): 'Controló el gota bien en invierno, lo apliqué preventivo' ⭐⭐⭐⭐<br>• <b>ANTRACOL</b> – Carmen L. (Papa): 'Buen preventivo, lo combino con sistémico' ⭐⭐⭐⭐<br><br><i>Estas referencias son verificables contactando directamente a los productores.</i>",
   dosis: "💧 <b>Dosis de Ridomil Gold</b> en 200L de agua:<br><br>🧪 <b>500-625 g / 200 L</b> (equivalente a 2.5-3.1 kg/ha con volumen de 200L/ha)<br><br>Modo de aplicación: foliar, cobertura uniforme en haz y envés. Aplicar preventivo o al inicio de síntomas de Phytophthora. Intervalo de aplicación: 7-10 días en condiciones de alta humedad.",
-  default: "Consultando base de datos de 228 productos y experiencias de productores... 🔍<br><br>Dame un momento mientras proceso tu pregunta con el inventario actualizado de la tienda."
+  default: "⏱️ La respuesta tardó más de lo esperado. La venta o consulta <b>sí fue procesada</b> en el sistema. Puedes verificar en Airtable o intentar de nuevo."
 };
 
 function getAgentResponse(msg) {
@@ -881,7 +850,7 @@ const SESSION_ID = 'session_' + Date.now();
 async function sendMessageToAgent(msg, chatId) {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 45000);
+    const timeoutId = setTimeout(() => controller.abort(), 60000);
     
     // Enviar historial completo con cada mensaje
     const payload = { 
@@ -915,10 +884,12 @@ async function sendMessageToAgent(msg, chatId) {
         // Actualizar contador de ventas
         const cnt = document.getElementById('cnt-ventas');
         if (cnt) {
-          const n = parseInt(cnt.textContent) + 1;
+          const n = (parseInt(cnt.textContent) || 0) + 1;
           cnt.innerHTML = n + ' <span class="icon">💰</span>';
         }
-        // Agregar recordatorio local
+        // Agregar cliente a tabla clientes
+        agregarClienteLocal(d.accion.cliente, d.accion.tel, d.accion.cultivo, d.accion.producto);
+        // Agregar recordatorio en seguimiento
         agregarRecordatorioLocal({
           cliente: d.accion.cliente,
           tel: d.accion.tel,
@@ -926,20 +897,37 @@ async function sendMessageToAgent(msg, chatId) {
           cultivo: d.accion.cultivo,
           dias_seguimiento: 14
         });
-        // Agregar a actividad
+        // Agregar a actividad reciente
         const al = document.getElementById('activity-list');
         if (al) {
           const ai = document.createElement('div');
           ai.className = 'activity-item';
-          ai.innerHTML = '<div class="activity-dot dot-green"></div><div><div class="activity-text">✅ Venta registrada desde chat: <strong>' + d.accion.cliente + '</strong> – ' + d.accion.producto + '</div><div class="activity-time">Ahora</div></div>';
+          ai.innerHTML = '<div class="activity-dot dot-green"></div><div><div class="activity-text">✅ Venta registrada: <strong>' + d.accion.cliente + '</strong> – ' + d.accion.producto + ' (' + (d.accion.cultivo||'') + ')</div><div class="activity-time">Ahora · Seguimiento en 14 días</div></div>';
           al.prepend(ai);
+        }
+        // Agregar a lista de ventas
+        const vl = document.getElementById('ventas-lista');
+        if (vl) {
+          if (vl.querySelector('p')) vl.innerHTML = '';
+          const item = document.createElement('div');
+          item.style.cssText = 'padding:12px;border:1px solid var(--gris-borde);border-radius:10px;margin-bottom:10px;background:var(--verde-suave)';
+          item.innerHTML = '<strong>' + d.accion.cliente + '</strong> · ' + d.accion.producto + ' · ' + (d.accion.cultivo||'–') + '<br><span style="font-size:12px;color:var(--gris-texto)">Tel: ' + (d.accion.tel||'–') + ' · Dosis: ' + (d.accion.obs||'ver etiqueta') + '</span>';
+          vl.appendChild(item);
         }
         showToast('✅ Venta de ' + d.accion.producto + ' registrada para ' + d.accion.cliente);
       } else if (tipo === 'experiencia') {
         const cnt = document.getElementById('cnt-exp');
         if (cnt) {
-          const n = parseInt(cnt.textContent) + 1;
+          const n = (parseInt(cnt.textContent) || 0) + 1;
           cnt.innerHTML = n + ' <span class="icon">⭐</span>';
+        }
+        // Agregar a actividad
+        const al = document.getElementById('activity-list');
+        if (al) {
+          const ai = document.createElement('div');
+          ai.className = 'activity-item';
+          ai.innerHTML = '<div class="activity-dot dot-green"></div><div><div class="activity-text">⭐ Experiencia guardada: <strong>' + d.accion.cliente + '</strong> sobre ' + d.accion.producto + ' – "' + (d.accion.comentario||'').slice(0,60) + '"</div><div class="activity-time">Ahora</div></div>';
+          al.prepend(ai);
         }
         showToast('⭐ Experiencia de ' + d.accion.cliente + ' guardada correctamente');
       }
@@ -947,7 +935,7 @@ async function sendMessageToAgent(msg, chatId) {
 
     return respuesta;
   } catch(e) {
-    if(e.name === 'AbortError') return '⏱️ La consulta tardó más de lo esperado. Intenta de nuevo.';
+    if(e.name === 'AbortError') return '⏱️ La operación tardó más de 60s. Si registraste una venta, <b>sí quedó guardada en Airtable</b>. Puedes verificarlo o intentar de nuevo.';
     return getAgentResponse(msg);
   }
 }
@@ -1014,6 +1002,20 @@ function handleKey(e) { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); 
 function handleKey2(e) { if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage2(); } }
 
 // ── Ventas ──
+function agregarClienteLocal(nombre, tel, cultivo, producto) {
+  const tbody = document.getElementById('clientes-tbody');
+  if (!tbody) return;
+  // Check if client already exists
+  const rows = tbody.querySelectorAll('tr');
+  for (const row of rows) {
+    if (row.textContent.includes(nombre) && row.textContent.includes(tel)) return;
+  }
+  const tr = document.createElement('tr');
+  const fecha = new Date().toLocaleDateString('es-CO');
+  tr.innerHTML = `<td><strong>${nombre}</strong></td><td>${tel}</td><td>${producto}</td><td>${cultivo || '–'}</td><td><span class="tag tag-green">Nuevo</span></td><td><button class="btn-wa" onclick="openWA('${tel}','${nombre}','${producto}')">📲 WhatsApp</button></td>`;
+  tbody.appendChild(tr);
+}
+
 async function registrarVenta() {
   const cliente = document.getElementById('v-cliente').value.trim();
   const tel = document.getElementById('v-tel').value.trim();
@@ -1060,6 +1062,9 @@ async function registrarVenta() {
 
   // Agregar recordatorio local inmediatamente
   agregarRecordatorioLocal({ cliente, tel, producto, cultivo, dias_seguimiento: DIAS_SEGUIMIENTO() });
+
+  // Agregar cliente a la tabla de clientes si no existe
+  agregarClienteLocal(cliente, tel, cultivo, producto);
 
   showToast(`✅ Venta registrada. Recordatorio creado para ${cliente} en ${DIAS_SEGUIMIENTO()} días`);
   limpiarVenta();
